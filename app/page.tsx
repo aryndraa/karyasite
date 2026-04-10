@@ -273,69 +273,82 @@ function ParticleBackground() {
   );
 }
 
+/* ─── Projects Data ─── */
+
+const latestProjects = [
+  {
+    title: "Glonotes - Sistem Poin & Cetak Surat",
+    image: "/Group 4130.png",
+    category: "Web App",
+    link: "https://glonotes.karyasite.com/"
+  },
+  {
+    title: "Restaurant POS",
+    image: "/Group 4132.png",
+    category: "Web App",
+    link: "https://github.com/aryndraa/pos-application"
+  },
+  {
+    title: "Landing Page Converison",
+    image: "/Group 4129.png",
+    category: "Wordpress Website",
+    link: "https://tekawoodandmetal.com/"
+  },
+  {
+    title: "Luxury Surya Nitya",
+    image: "/Group 4131.png",
+    category: "Company Profile",
+    link: "https://luxury-surya-nitya.vercel.app/"
+  },
+];
+
 /* ─── Page Component ─── */
 
 export default function ComingSoonPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isStarted, setIsStarted] = useState(false);
+  const [isProjectsOpen, setIsProjectsOpen] = useState(false);
 
   useEffect(() => {
-    // Audio initialization - using absolute path for reliability
-    audioRef.current = new Audio("/song.mpeg");
-    audioRef.current.loop = true;
-
-    // Attempt to play immediately (often blocked by browsers)
-    const playAttempt = audioRef.current.play();
-    if (playAttempt !== undefined) {
-      playAttempt
-        .then(() => setIsPlaying(true))
-        .catch(() => {
-          console.log("Autoplay blocked. Waiting for user interaction...");
-        });
-    }
-
-    // Global listener to trigger play on first interaction
-    const handleFirstInteraction = () => {
-      if (audioRef.current && !isPlaying) {
-        audioRef.current.play()
-          .then(() => {
-            setIsPlaying(true);
-            document.removeEventListener("click", handleFirstInteraction);
-            document.removeEventListener("keydown", handleFirstInteraction);
-            document.removeEventListener("touchstart", handleFirstInteraction);
-          })
-          .catch(err => console.log("Still blocked:", err));
-      }
-    };
-
-    document.addEventListener("click", handleFirstInteraction);
-    document.addEventListener("keydown", handleFirstInteraction);
-    document.addEventListener("touchstart", handleFirstInteraction);
+    // Audio initialization - only once
+    const audio = new Audio("/song.mpeg");
+    audio.loop = true;
+    audioRef.current = audio;
 
     return () => {
-      document.removeEventListener("click", handleFirstInteraction);
-      document.removeEventListener("keydown", handleFirstInteraction);
-      document.removeEventListener("touchstart", handleFirstInteraction);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      audio.pause();
+      audioRef.current = null;
     };
-  }, [isPlaying]);
+  }, []);
+
+  const handleStart = () => {
+    setIsStarted(true);
+    if (audioRef.current) {
+      audioRef.current.play()
+        .then(() => setIsPlaying(true))
+        .catch(err => console.log("Audio play failed:", err));
+    }
+  };
 
   const toggleMusic = () => {
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
+    if (!audio) return;
 
     if (isPlaying) {
-      audioRef.current.pause();
+      audio.pause();
+      setIsPlaying(false);
     } else {
-      audioRef.current.play().catch((err) => console.log("Audio play blocked:", err));
+      audio.play()
+        .then(() => setIsPlaying(true))
+        .catch((err) => console.log("Audio play blocked:", err));
     }
-    setIsPlaying(!isPlaying);
   };
 
   useEffect(() => {
+    if (!isStarted) return;
+
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         defaults: { ease: "back.out(1.7)", duration: 0.8 },
@@ -417,17 +430,94 @@ export default function ComingSoonPage() {
     }, containerRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [isStarted]);
+
+  /* ─── Projects Marquee & Entrance ─── */
+  useEffect(() => {
+    if (!isProjectsOpen) return;
+
+    const ctx = gsap.context(() => {
+      const marqueeInner = document.querySelector(".marquee-inner");
+      if (!marqueeInner) return;
+
+      const totalWidth = marqueeInner.scrollWidth / 3;
+
+      // ── Entrance Animation for Cards ──
+      gsap.fromTo(".project-card", 
+        { 
+          opacity: 0, 
+          y: 40, 
+          rotateX: -20,
+          scale: 0.9 
+        },
+        {
+          opacity: 1, 
+          y: 0, 
+          rotateX: 0,
+          scale: 1,
+          duration: 0.8,
+          stagger: 0.1,
+          ease: "back.out(1.5)",
+          delay: 0.4 // Wait for panel to start rolling up
+        }
+      );
+
+      // ── Continuous Marquee ──
+      gsap.to(".marquee-inner", {
+        x: -totalWidth,
+        duration: 30, // Slower for better readability
+        ease: "none",
+        repeat: -1,
+        delay: 1.5, // Start moving after entrance finishes
+        modifiers: {
+          x: gsap.utils.unitize((x) => parseFloat(x) % totalWidth),
+        },
+      });
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, [isProjectsOpen]);
 
   return (
     <div
       ref={containerRef}
-      className="relative flex flex-col items-center justify-center min-h-screen px-6 py-10 overflow-hidden bg-grid"
+      className={`relative flex flex-col items-center justify-center min-h-screen px-6 py-10 overflow-hidden bg-grid transition-all duration-700 ${isProjectsOpen ? "pb-[55vh]" : ""}`}
     >
+      {/* ── Entrance Shield (Splash Screen) ── */}
+      <div 
+        className={`fixed inset-0 z-100 flex items-center justify-center bg-white transition-all duration-1000 ease-[cubic-bezier(0.85,0,0.15,1)] ${
+          isStarted ? "-translate-y-full" : "translate-y-0"
+        }`}
+      >
+        <div className="flex flex-col items-center gap-6">
+          <div className="w-16 h-16 rounded-full border-2 border-primary/20 flex items-center justify-center animate-pulse">
+             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <MusicIcon className="w-6 h-6" />
+             </div>
+          </div>
+          <button
+            onClick={handleStart}
+            className="group relative px-8 py-3 rounded-full bg-black text-white overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-xl"
+          >
+            <span className="relative z-10 font-medium tracking-wide">Enter Karyasite</span>
+            <div className="absolute inset-0 bg-primary translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+          </button>
+          <p className="text-[11px] uppercase tracking-widest text-[#0A0A0A]/40 font-bold">Experience with Music</p>
+        </div>
+      </div>
       <ParticleBackground />
       <div className="content-wrapper relative z-10 flex flex-col items-center gap-8 sm:gap-10 w-full max-w-[560px]">
+
         {/* ── Avatar ── */}
         <div className="avatar-container relative opacity-0">
+          {/* Rotating Dashed Ring */}
+          <div className="absolute -inset-[15px] rounded-full border border-dashed border-primary/30 animate-[spin_10s_linear_infinite]" />
+          
+          {/* Orbiting Dot */}
+          <div className="absolute -inset-[15px] animate-[spin_4s_linear_infinite]">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_#5E2CD1]" />
+          </div>
+
           <div className="relative w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] rounded-full p-2 border-2 border-black/20  ">
             <Image
               src="/aavatar.jpeg"
@@ -455,12 +545,18 @@ export default function ComingSoonPage() {
           </h1>
 
           <p className="subtitle-text opacity-0 text-[15px] sm:text-[16px] leading-relaxed text-text-muted max-w-[400px]">
-            Yo! I&apos;m Mahendra Arya, a Web Developer based in Indonesia. I&apos;m currently working on my personal portfolio website to showcase my skills and projects.
+            Yo! I&apos;m Mahendra Arya, a Web Developer based in Indonesia. I&apos;m currently working on my portfolio website to showcase my projects.
           </p>
         </div>
 
-        {/* ── Divider ── */}
-        <div className="divider opacity-0 w-[60px] h-0.5 rounded-full bg-[linear-gradient(135deg,#5E2CD1_0%,#5B8DFF_100%)]" />
+          {/* ── Latest Projects Button (Cta) ── */}
+        <button
+          onClick={() => setIsProjectsOpen(!isProjectsOpen)}
+          className="brand-label opacity-0 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#5E2CD1]/10 text-primary border border-primary/20 text-[12px] font-bold tracking-tight hover:bg-primary hover:text-white transition-all duration-300"
+        >
+          {isProjectsOpen ? "Close Projects" : "See Latest Projects"}
+          <RocketIcon className="w-3.5 h-3.5" />
+        </button>
 
         {/* ── Quick Links ── */}
         <div className="links-section opacity-0 flex flex-col items-center gap-4 w-full">
@@ -490,6 +586,88 @@ export default function ComingSoonPage() {
           <p className="text-[13px] text-text-light font-regular">
             © 2026 karyasite. All rights reserved.
           </p>
+        </div>
+      </div>
+
+      {/* ── Background Blur Overlay ── */}
+      <div 
+        onClick={() => setIsProjectsOpen(false)}
+        className={`fixed inset-0 z-50 bg-black/5 backdrop-blur-md transition-opacity duration-700 ${
+          isProjectsOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+      />
+
+      {/* ── Projects Bottom Sheet ── */}
+      <div 
+        className={`fixed bottom-0 left-0 lg:left-1/2 right-0 lg:-translate-x-1/2  z-60 mx-4 mb-4 rounded-xl bg-white border-2 border-primary shadow-xl lg:max-w-[50%]  transition-transform duration-700 ease-[cubic-bezier(0.85,0,0.15,1)] ${
+          isProjectsOpen ? "translate-y-0" : "translate-y-120"
+        }`}
+        style={{ height: '58vh' }}
+      >
+        <div className="flex flex-col h-full">
+           <div className="flex items-center justify-between px-6 py-5 border-b border-border/50">
+              <h2 className="text-lg font-bold tracking-tight text-[#0A0A0A]">Latest Projects</h2>
+              <button 
+                onClick={() => setIsProjectsOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-black/5 hover:bg-black/10 transition-colors"
+              >
+                <span className="text-xl leading-none">×</span>
+              </button>
+           </div>
+           
+           {/* Carousel - Infinite Loop */}
+           <div 
+             className="flex-1 overflow-hidden py-6"
+             onMouseEnter={() => gsap.to(".marquee-inner", { timeScale: 0, duration: 0.5 })}
+             onMouseLeave={() => gsap.to(".marquee-inner", { timeScale: 1, duration: 0.5 })}
+           >
+              <div className="marquee-inner flex gap-4 min-w-max px-6">
+                 {/* Duplicate projects to ensure seamless loop */}
+                 {[...latestProjects, ...latestProjects, ...latestProjects].map((project, idx) => (
+                    <div key={idx} className="project-card opacity-0 w-70 sm:w-80 group cursor-pointer">
+                       <a 
+                          href={project.link} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="relative aspect-video rounded-2xl overflow-hidden block border border-border/50 shadow-sm transition-transform group-hover:scale-[1.02]"
+                       >
+                          <Image 
+                            src={project.image} 
+                            alt={project.title}
+                            fill
+                            className="object-cover"
+                          />
+                          {/* Hover Overlay */}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center gap-3">
+                             <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                                <ArrowIcon className="w-6 h-6 text-white rotate-45" />
+                             </div>
+                             <span className="text-white text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity delay-100">
+                               View Demo
+                             </span>
+                          </div>
+                       </a>
+                       <div className="mt-3">
+                          <p className="font-medium text-sm text-[#0A0A0A]">{project.title}</p>
+                          <p className="text-xs text-text-muted">{project.category}</p>
+                       </div>
+                    </div>
+                 ))}
+              </div>
+           </div>
+
+           <div className="p-6 border-t border-border/50 bg-gray-50/50">
+              <a 
+                href="https://github.com/aryndraa" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-[#0A0A0A] text-white font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                <GitHubIcon className="w-5 h-5" />
+                Explore More on GitHub
+                <ArrowIcon className="w-4 h-4" />
+              </a>
+           </div>
         </div>
       </div>
 
