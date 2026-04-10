@@ -279,25 +279,25 @@ const latestProjects = [
   {
     title: "Glonotes - Sistem Poin & Cetak Surat",
     image: "/Group 4130.png",
-    category: "Web App",
+    category: "Web App | PHP MVCSR",
     link: "https://glonotes.karyasite.com/"
   },
   {
     title: "Restaurant POS",
     image: "/Group 4132.png",
-    category: "Web App",
+    category: "Web App | Laravel Inertia",
     link: "https://github.com/aryndraa/pos-application"
   },
   {
-    title: "Landing Page Converison",
+    title: "Cupsite - Pricing Page",
     image: "/Group 4129.png",
-    category: "Wordpress Website",
-    link: "https://tekawoodandmetal.com/"
+    category: "Landing Page Conversion | Next Js",
+    link: "https://cupsite-project.vercel.app/"
   },
   {
     title: "Luxury Surya Nitya",
     image: "/Group 4131.png",
-    category: "Company Profile",
+    category: "Company Profile | Next Js",
     link: "https://luxury-surya-nitya.vercel.app/"
   },
 ];
@@ -351,81 +351,54 @@ export default function ComingSoonPage() {
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
-        defaults: { ease: "back.out(1.7)", duration: 0.8 },
+        defaults: { ease: "power4.out", duration: 1 },
       });
 
-      /* Avatar entrance - pop in with extra scale */
+      /* 1. Avatar reveal with orbiting elements */
       tl.fromTo(
         ".avatar-container",
-        { opacity: 0, scale: 0.5, rotate: -15 },
-        { opacity: 1, scale: 1, rotate: 0, duration: 1, ease: "elastic.out(1, 0.5)" }
+        { opacity: 0, scale: 0, rotate: -45 },
+        { opacity: 1, scale: 1, rotate: 0, duration: 1.5, ease: "elastic.out(1, 0.6)" },
+        "+=0.2"
       );
 
-      /* Brand label pop */
+      // Dash ring and dot fly in
+      tl.fromTo(
+        [".dashed-ring", ".orbit-dot"],
+        { opacity: 0, scale: 0 },
+        { opacity: 1, scale: 1, duration: 1, stagger: 0.2, ease: "back.out(2)" },
+        "-=1"
+      );
+
+      /* 2. Brand Label */
       tl.fromTo(
         ".brand-label",
-        { scale: 0.8, opacity: 0, rotateX: 90 },
-        { scale: 1, opacity: 1, rotateX: 0, duration: 0.6 },
+        { opacity: 0, y: -20, rotateX: 90 },
+        { opacity: 1, y: 0, rotateX: 0, duration: 0.8 },
         "-=0.6"
       );
 
-      /* Heading words stagger */
+      /* 3. Heading - Word by word staggered reveal */
       tl.fromTo(
         ".heading-word",
-        { opacity: 0, y: 40, rotateX: -40 },
-        { opacity: 1, y: 0, rotateX: 0, duration: 0.8, stagger: 0.1 },
+        { opacity: 0, y: 30, rotateX: -30 },
+        { opacity: 1, y: 0, rotateX: 0, duration: 0.8, stagger: 0.15, ease: "back.out(1.2)" },
         "-=0.4"
       );
 
-      /* Subtitle fade in */
-      tl.fromTo(
-        ".subtitle-text",
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.7 },
-        "-=0.5"
-      );
-
-      /* Divider expansion */
-      tl.fromTo(
-        ".divider",
-        { opacity: 0, width: 0 },
-        { opacity: 1, width: 60, duration: 0.8, ease: "power4.out" },
-        "-=0.4"
-      );
-
-      /* Links section container */
-      tl.to(".links-section", { opacity: 1, duration: 0.3 }, "-=0.3");
-
-      /* Individual link stagger with a 3D flip effect */
-      tl.fromTo(
-        ".quick-link",
-        { opacity: 0, y: 30, rotateX: -30, scale: 0.9 },
-        {
-          opacity: 1,
-          y: 0,
-          rotateX: 0,
-          scale: 1,
-          duration: 0.6,
-          stagger: 0.1,
-        },
-        "-=0.5"
-      );
-
-      /* Music Player entrance */
-      tl.fromTo(
-        ".music-player",
-        { opacity: 0, scale: 0, rotate: 180 },
-        { opacity: 1, scale: 1, rotate: 0, duration: 0.8, ease: "elastic.out(1, 0.3)" },
-        "-=0.3"
-      );
-
-      /* Footer */
-      tl.fromTo(
-        ".footer-section",
-        { opacity: 0, y: 10 },
-        { opacity: 1, y: 0, duration: 0.5 },
+      /* 4. Subtitle and other elements */
+      tl.fromTo(".subtitle-text", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 1 }, "-=0.5");
+      tl.fromTo(".divider", { opacity: 0, width: 0 }, { opacity: 1, width: 60, duration: 0.8, ease: "power4.inOut" }, "-=0.6");
+      tl.to(".links-section", { opacity: 1, duration: 0.3 }, "-=0.4");
+      
+      tl.fromTo(".quick-link",
+        { opacity: 0, y: 20, rotateX: -45, scale: 0.9 },
+        { opacity: 1, y: 0, rotateX: 0, scale: 1, duration: 0.7, stagger: 0.08, ease: "back.out(1.5)" },
         "-=0.2"
       );
+
+      tl.fromTo(".music-player", { opacity: 0, scale: 0, rotate: 90 }, { opacity: 1, scale: 1, rotate: 0, duration: 0.8, ease: "back.out(2)" }, "-=0.5");
+      tl.fromTo(".footer-section", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.6 }, "-=0.3");
 
     }, containerRef);
 
@@ -465,7 +438,7 @@ export default function ComingSoonPage() {
       // ── Continuous Marquee ──
       gsap.to(".marquee-inner", {
         x: -totalWidth,
-        duration: 30, // Slower for better readability
+        duration: 20, // Slower for better readability
         ease: "none",
         repeat: -1,
         delay: 1.5, // Start moving after entrance finishes
@@ -485,7 +458,7 @@ export default function ComingSoonPage() {
     >
       {/* ── Entrance Shield (Splash Screen) ── */}
       <div 
-        className={`fixed inset-0 z-100 flex items-center justify-center bg-white transition-all duration-1000 ease-[cubic-bezier(0.85,0,0.15,1)] ${
+        className={`fixed inset-0 z-100 flex items-center justify-center bg-white transition-all duration-800 ease-[cubic-bezier(0.85,0,0.15,1)] ${
           isStarted ? "-translate-y-full" : "translate-y-0"
         }`}
       >
@@ -511,10 +484,10 @@ export default function ComingSoonPage() {
         {/* ── Avatar ── */}
         <div className="avatar-container relative opacity-0">
           {/* Rotating Dashed Ring */}
-          <div className="absolute -inset-[15px] rounded-full border border-dashed border-primary/30 animate-[spin_10s_linear_infinite]" />
+          <div className="dashed-ring absolute -inset-3.75 rounded-full border border-dashed border-primary/30 animate-[spin_10s_linear_infinite]" />
           
           {/* Orbiting Dot */}
-          <div className="absolute -inset-[15px] animate-[spin_4s_linear_infinite]">
+          <div className="orbit-dot absolute -inset-3.75 animate-[spin_4s_linear_infinite]">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_#5E2CD1]" />
           </div>
 
