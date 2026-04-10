@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import gsap from "gsap";
 
@@ -94,6 +94,42 @@ function RocketIcon({ className }: { className?: string }) {
   );
 }
 
+function MusicIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="16" r="3" />
+    </svg>
+  );
+}
+
+function MuteIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M11 5L6 9H2v6h4l5 4V5z" />
+      <line x1="23" y1="9" x2="17" y2="15" />
+      <line x1="17" y1="9" x2="23" y2="15" />
+    </svg>
+  );
+}
+
 function ArrowIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -146,113 +182,238 @@ const quickLinks = [
   },
 ];
 
+/* ─── Particle Background Component ─── */
+
+function ParticleBackground() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let particles: Particle[] = [];
+    const particleCount = 50;
+
+    class Particle {
+      x: number = 0;
+      y: number = 0;
+      radius: number = 0;
+      angle: number = 0;
+      distance: number = 0;
+      speed: number = 0;
+      color: string = "";
+
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.angle = Math.random() * Math.PI * 2;
+        this.distance = Math.random() * (Math.max(window.innerWidth, window.innerHeight) / 2);
+        this.radius = Math.random() * 2 + 0.5;
+        this.speed = (Math.random() * 0.002 + 0.0005) * (Math.random() > 0.5 ? 1 : -1);
+        this.color = Math.random() > 0.5 ? "rgba(94, 44, 209, 0.2)" : "rgba(91, 141, 255, 0.2)";
+      }
+
+      update() {
+        this.angle += this.speed;
+        this.x = canvas!.width / 2 + Math.cos(this.angle) * this.distance;
+        this.y = canvas!.height / 2 + Math.sin(this.angle) * this.distance;
+      }
+
+      draw() {
+        if (!ctx) return;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+      }
+    }
+
+    const init = () => {
+      particles = [];
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+      }
+    };
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      init();
+    };
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p) => {
+        p.update();
+        p.draw();
+      });
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    window.addEventListener("resize", resize);
+    resize();
+    animate();
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 pointer-events-none z-0"
+    />
+  );
+}
+
 /* ─── Page Component ─── */
 
 export default function ComingSoonPage() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    // Audio initialization - using absolute path for reliability
+    audioRef.current = new Audio("/song.mpeg");
+    audioRef.current.loop = true;
+
+    // Attempt to play immediately (often blocked by browsers)
+    const playAttempt = audioRef.current.play();
+    if (playAttempt !== undefined) {
+      playAttempt
+        .then(() => setIsPlaying(true))
+        .catch(() => {
+          console.log("Autoplay blocked. Waiting for user interaction...");
+        });
+    }
+
+    // Global listener to trigger play on first interaction
+    const handleFirstInteraction = () => {
+      if (audioRef.current && !isPlaying) {
+        audioRef.current.play()
+          .then(() => {
+            setIsPlaying(true);
+            document.removeEventListener("click", handleFirstInteraction);
+            document.removeEventListener("keydown", handleFirstInteraction);
+            document.removeEventListener("touchstart", handleFirstInteraction);
+          })
+          .catch(err => console.log("Still blocked:", err));
+      }
+    };
+
+    document.addEventListener("click", handleFirstInteraction);
+    document.addEventListener("keydown", handleFirstInteraction);
+    document.addEventListener("touchstart", handleFirstInteraction);
+
+    return () => {
+      document.removeEventListener("click", handleFirstInteraction);
+      document.removeEventListener("keydown", handleFirstInteraction);
+      document.removeEventListener("touchstart", handleFirstInteraction);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, [isPlaying]);
+
+  const toggleMusic = () => {
+    if (!audioRef.current) return;
+
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch((err) => console.log("Audio play blocked:", err));
+    }
+    setIsPlaying(!isPlaying);
+  };
 
   useEffect(() => {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
-        defaults: { ease: "power3.out" },
+        defaults: { ease: "back.out(1.7)", duration: 0.8 },
       });
 
-      /* Ambient orbs fade in */
-      tl.to(".ambient-orb", {
-        opacity: 1,
-        duration: 1.5,
-        stagger: 0.2,
-      });
-
-      /* Avatar entrance */
+      /* Avatar entrance - pop in with extra scale */
       tl.fromTo(
         ".avatar-container",
-        { opacity: 0, y: 30, scale: 0.9 },
-        { opacity: 1, y: 0, scale: 1, duration: 0.8 },
-        "-=0.8"
-      );
-
-      /* Text section */
-      tl.fromTo(
-        ".text-section",
-        { opacity: 0, y: 24 },
-        { opacity: 1, y: 0, duration: 0.7 },
-        "-=0.4"
+        { opacity: 0, scale: 0.5, rotate: -15 },
+        { opacity: 1, scale: 1, rotate: 0, duration: 1, ease: "elastic.out(1, 0.5)" }
       );
 
       /* Brand label pop */
       tl.fromTo(
         ".brand-label",
-        { scale: 0.9, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 0.4 },
+        { scale: 0.8, opacity: 0, rotateX: 90 },
+        { scale: 1, opacity: 1, rotateX: 0, duration: 0.6 },
+        "-=0.6"
+      );
+
+      /* Heading words stagger */
+      tl.fromTo(
+        ".heading-word",
+        { opacity: 0, y: 40, rotateX: -40 },
+        { opacity: 1, y: 0, rotateX: 0, duration: 0.8, stagger: 0.1 },
+        "-=0.4"
+      );
+
+      /* Subtitle fade in */
+      tl.fromTo(
+        ".subtitle-text",
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.7 },
         "-=0.5"
       );
 
-      /* Divider */
+      /* Divider expansion */
       tl.fromTo(
         ".divider",
-        { opacity: 0, scaleX: 0 },
-        { opacity: 1, scaleX: 1, duration: 0.5 },
-        "-=0.2"
+        { opacity: 0, width: 0 },
+        { opacity: 1, width: 60, duration: 0.8, ease: "power4.out" },
+        "-=0.4"
       );
 
-      /* Links section */
-      tl.fromTo(
-        ".links-section",
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.6 },
-        "-=0.2"
-      );
+      /* Links section container */
+      tl.to(".links-section", { opacity: 1, duration: 0.3 }, "-=0.3");
 
-      /* Individual link stagger */
+      /* Individual link stagger with a 3D flip effect */
       tl.fromTo(
         ".quick-link",
-        { opacity: 0, y: 12, scale: 0.95 },
+        { opacity: 0, y: 30, rotateX: -30, scale: 0.9 },
         {
           opacity: 1,
           y: 0,
+          rotateX: 0,
           scale: 1,
-          duration: 0.4,
-          stagger: 0.08,
+          duration: 0.6,
+          stagger: 0.1,
         },
+        "-=0.5"
+      );
+
+      /* Music Player entrance */
+      tl.fromTo(
+        ".music-player",
+        { opacity: 0, scale: 0, rotate: 180 },
+        { opacity: 1, scale: 1, rotate: 0, duration: 0.8, ease: "elastic.out(1, 0.3)" },
         "-=0.3"
       );
 
       /* Footer */
       tl.fromTo(
         ".footer-section",
-        { opacity: 0 },
-        { opacity: 1, duration: 0.5 },
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.5 },
         "-=0.2"
       );
 
-      /* Floating animation for ambient orbs */
-      gsap.to(".ambient-orb-1", {
-        y: 20,
-        x: -10,
-        duration: 6,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-      });
-
-      gsap.to(".ambient-orb-2", {
-        y: -15,
-        x: 15,
-        duration: 8,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-      });
-
-      gsap.to(".ambient-orb-3", {
-        y: 12,
-        x: -8,
-        duration: 7,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-      });
     }, containerRef);
 
     return () => ctx.revert();
@@ -263,6 +424,7 @@ export default function ComingSoonPage() {
       ref={containerRef}
       className="relative flex flex-col items-center justify-center min-h-screen px-6 py-10 overflow-hidden bg-grid"
     >
+      <ParticleBackground />
       <div className="content-wrapper relative z-10 flex flex-col items-center gap-8 sm:gap-10 w-full max-w-[560px]">
         {/* ── Avatar ── */}
         <div className="avatar-container relative opacity-0">
@@ -279,18 +441,21 @@ export default function ComingSoonPage() {
         </div>
 
         {/* ── Text Content ── */}
-        <div className="text-section flex flex-col items-center gap-3 text-center opacity-0 px-4">
-          <span className="brand-label inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-black/20 text-[13px] font-medium tracking-wide">
+        <div className="text-section flex flex-col items-center gap-3 text-center px-4">
+          <span className="brand-label opacity-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-black/20 text-[13px] font-medium tracking-wide">
             <span className="w-1.5 h-1.5 rounded-full bg-primary" />
             Mahendra Arya | Web Developer
           </span>
 
-          <h1 className="text-[34px] sm:text-[40px] md:text-[44px] font-medium leading-[1.1] tracking-tighter text-[#0A0A0A]">
-            Coming <span className="bg-[linear-gradient(135deg,#5E2CD1_0%,#5B8DFF_100%)] bg-clip-text text-transparent">Soon!</span>
+          <h1 className="text-[34px] sm:text-[40px] md:text-[44px] font-medium leading-[1.1] tracking-tighter text-[#0A0A0A] perspective-1000">
+            <span className="heading-word opacity-0 inline-block mr-2">Coming</span>
+            <span className="heading-word opacity-0 inline-block bg-[linear-gradient(135deg,#5E2CD1_0%,#5B8DFF_100%)] bg-clip-text text-transparent">
+              Soon!
+            </span>
           </h1>
 
-          <p className="text-[15px] sm:text-[16px] leading-relaxed text-text-muted max-w-[400px]">
-            Yo! I'm Mahendra Arya, a Web Developer based in Indonesia. I'm currently working on my personal portfolio website to showcase my skills and projects.
+          <p className="subtitle-text opacity-0 text-[15px] sm:text-[16px] leading-relaxed text-text-muted max-w-[400px]">
+            Yo! I&apos;m Mahendra Arya, a Web Developer based in Indonesia. I&apos;m currently working on my personal portfolio website to showcase my skills and projects.
           </p>
         </div>
 
@@ -298,7 +463,7 @@ export default function ComingSoonPage() {
         <div className="divider opacity-0 w-[60px] h-0.5 rounded-full bg-[linear-gradient(135deg,#5E2CD1_0%,#5B8DFF_100%)]" />
 
         {/* ── Quick Links ── */}
-        <div className="links-section flex flex-col items-center gap-4 w-full opacity-0">
+        <div className="links-section opacity-0 flex flex-col items-center gap-4 w-full">
           <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-text-light">
             Quick Links
           </span>
@@ -310,7 +475,7 @@ export default function ComingSoonPage() {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="quick-link inline-flex items-center gap-2 px-3.5 py-2.5 sm:px-4.5 sm:py-2.5 rounded-full bg-white border border-border text-[13px] sm:text-sm font-medium text-[#0A0A0A] transition-all duration-300 shadow-sm hover:border-primary/30 hover:bg-[linear-gradient(135deg,rgba(94,44,209,0.06)_0%,rgba(91,141,255,0.06)_100%)] hover:shadow-md hover:-translate-y-0.5 group"
+                className="quick-link opacity-0 inline-flex items-center gap-2 px-3.5 py-2.5 sm:px-4.5 sm:py-2.5 rounded-full bg-white border border-border text-[13px] sm:text-sm font-medium text-[#0A0A0A] transition-all duration-300 shadow-sm hover:border-primary/30 hover:bg-[linear-gradient(135deg,rgba(94,44,209,0.06)_0%,rgba(91,141,255,0.06)_100%)] hover:shadow-md hover:-translate-y-0.5 group"
               >
                 <link.icon className="w-4 h-4 text-text-muted transition-colors group-hover:text-primary shrink-0" />
                 {link.label}
@@ -321,13 +486,25 @@ export default function ComingSoonPage() {
         </div>
 
         {/* ── Footer ── */}
-        <div className="footer-section flex flex-col items-center gap-2 opacity-0">
+        <div className="footer-section opacity-0 flex flex-col items-center gap-2">
           <p className="text-[13px] text-text-light font-regular">
-            © 2026{" "}
-              karyasite. All rights reserved.
+            © 2026 karyasite. All rights reserved.
           </p>
         </div>
       </div>
+
+      {/* ── Music Player Button ── */}
+      <button
+        onClick={toggleMusic}
+        className="music-player opacity-0 fixed bottom-8 right-8 z-50 flex items-center justify-center w-12 h-12 rounded-full bg-white border border-border shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all group"
+        aria-label="Toggle Music"
+      >
+        {isPlaying ? (
+          <MusicIcon className="w-5 h-5 text-primary animate-pulse" />
+        ) : (
+          <MuteIcon className="w-5 h-5 text-text-muted group-hover:text-primary transition-colors" />
+        )}
+      </button>
     </div>
   );
 }
