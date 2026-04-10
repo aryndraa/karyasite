@@ -310,6 +310,7 @@ export default function ComingSoonPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
   const [isProjectsOpen, setIsProjectsOpen] = useState(false);
+  const wasPlayingBeforeHide = useRef(false);
 
   useEffect(() => {
     // Audio initialization - only once
@@ -317,7 +318,31 @@ export default function ComingSoonPage() {
     audio.loop = true;
     audioRef.current = audio;
 
+    // Handle Tab Visibility Changes
+    const handleVisibilityChange = () => {
+      if (!audioRef.current) return;
+
+      if (document.visibilityState === "hidden") {
+        if (!audioRef.current.paused) {
+          wasPlayingBeforeHide.current = true;
+          audioRef.current.pause();
+          setIsPlaying(false);
+        } else {
+          wasPlayingBeforeHide.current = false;
+        }
+      } else if (document.visibilityState === "visible") {
+        if (wasPlayingBeforeHide.current) {
+          audioRef.current.play()
+            .then(() => setIsPlaying(true))
+            .catch(err => console.log("Auto-resume blocked:", err));
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       audio.pause();
       audioRef.current = null;
     };
@@ -362,12 +387,12 @@ export default function ComingSoonPage() {
         "+=0.2"
       );
 
-      // Dash ring and dot fly in
+      // Dash ring and dot fly in via their wrappers to avoid CSS spin conflict
       tl.fromTo(
-        [".dashed-ring", ".orbit-dot"],
-        { opacity: 0, scale: 0 },
-        { opacity: 1, scale: 1, duration: 1, stagger: 0.2, ease: "back.out(2)" },
-        "-=1"
+        ".orbit-entrance",
+        { opacity: 0, scale: 0.5 },
+        { opacity: 1, scale: 1, duration: 1.2, stagger: 0.2, ease: "power4.out" },
+        "-=1.2"
       );
 
       /* 2. Brand Label */
@@ -483,12 +508,16 @@ export default function ComingSoonPage() {
 
         {/* ── Avatar ── */}
         <div className="avatar-container relative opacity-0">
-          {/* Rotating Dashed Ring */}
-          <div className="dashed-ring absolute -inset-3.75 rounded-full border border-dashed border-primary/30 animate-[spin_10s_linear_infinite]" />
+          {/* Entrance Wrapper for Ring */}
+          <div className="orbit-entrance absolute inset-0 opacity-0">
+             <div className="dashed-ring absolute -inset-3.75 rounded-full border border-dashed border-primary/30 animate-[spin_10s_linear_infinite]" />
+          </div>
           
-          {/* Orbiting Dot */}
-          <div className="orbit-dot absolute -inset-3.75 animate-[spin_4s_linear_infinite]">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_#5E2CD1]" />
+          {/* Entrance Wrapper for Dot */}
+          <div className="orbit-entrance absolute inset-0 opacity-0">
+             <div className="orbit-dot absolute -inset-3.75 animate-[spin_4s_linear_infinite]">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_#5E2CD1]" />
+             </div>
           </div>
 
           <div className="relative w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] rounded-full p-2 border-2 border-black/20  ">
